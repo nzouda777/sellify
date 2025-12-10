@@ -1,0 +1,132 @@
+version: "3.9"
+
+x-laravel-common: &laravel-common
+  image: sellify-app
+  restart: unless-stopped
+  working_dir: /var/www/html
+  env_file:
+    - .env
+  volumes:
+    - .:/var/www/html
+    - vendor:/var/www/html/vendor
+  networks:
+    - sellify-network
+
+services:
+  app:
+    <<: *laravel-common
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sellify-app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  web:
+    image: nginx:1.27
+    container_name: sellify-web
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/var/www/html
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      app:
+        condition: service_started
+    networks:
+      - sellify-network
+
+  vite:
+    image: node:20-bullseye-slim
+    container_name: sellify-vite
+    working_dir: /var/www/html
+    command: sh -c "npm install && npm run dev -- --host --port 5173"
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/var/www/html
+      - node_modules:/var/www/html/node_modules
+    depends_on:
+      app:
+        condition: service_started
+    networks:
+      - sellify-network
+    profiles:
+      - dev
+
+  worker:
+    <<: *laravel-common
+    container_name: sellify-worker
+    command: php artisan queue:work --tries=3
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  scheduler:
+    <<: *laravel-common
+    container_name: sellify-scheduler
+    command: php artisan schedule:work
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  db:
+    image: mysql:8.0
+    container_name: sellify-db
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_DATABASE: sellify
+      MYSQL_USER: sellify
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: secret
+    volumes:
+      - sellify_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      timeout: 5s
+      retries: 10
+    networks:
+      - sellify-network
+
+  redis:
+    image: redis:7
+    container_name: sellify-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - sellify-network
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:5.2
+    container_name: sellify-phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "8081:80"
+    environment:
+      - PMA_HOST=db
+      - PMA_USER=sellify
+      - PMA_PASSWORD=secret
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - sellify-network
+
+networks:
+  sellify-network:
+    driver: bridge
+
+volumes:
+  vendor:
+  node_modules:
+  sellify_mysql_data:
