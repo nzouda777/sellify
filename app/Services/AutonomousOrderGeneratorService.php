@@ -164,6 +164,7 @@ class AutonomousOrderGeneratorService
                 'trace' => $e->getTraceAsString(),
             ]);
 
+            
             throw $e;
         }
     }
