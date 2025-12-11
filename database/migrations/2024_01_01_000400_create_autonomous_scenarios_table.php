@@ -24,6 +24,7 @@ return new class extends Migration
             $table->decimal('max_amount', 10, 2)->nullable();
             $table->unsignedInteger('target_orders')->nullable();
             $table->unsignedInteger('generated_orders')->default(0);
+            $table->string('promo_code')->nullable();
             $table->boolean('is_active')->default(false);
             $table->timestamp('next_run_at')->nullable();
             $table->timestamps();
