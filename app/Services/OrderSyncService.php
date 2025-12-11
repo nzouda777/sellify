@@ -55,6 +55,7 @@ class OrderSyncService
                 $lineItem = [
                     'quantity' => (int) $item['quantity'],
                     'price' => (string) number_format((float) $item['unit_price'], 2, '.', ''),
+                    'promo_code' => $order->promo_code,
                 ];
 
                 // Ajouter variant_id si disponible
@@ -110,6 +111,7 @@ class OrderSyncService
                     // 'note' => 'Order created from Filament admin panel',
                     // marque la commande comme paye
                     'financial_status' => 'paid',
+                    'promo_code' => $order->promo_code,
                     // 'fulfillment_status' => 'fulfilled',
 
                     // 'source_name' => "web",          // 👈 très important
