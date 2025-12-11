@@ -91,6 +91,7 @@ class AutonomousOrderGeneratorService
                 'amount' => $amount,
                 'currency' => $scenario->shop->products()->first()?->payload['presentment_prices'][0]['price']['currency_code'] ?? 'EUR',
                 'quantity' => $quantity,
+                'promo_code' => $scenario->promo_code,
                 'status' => Order::STATUS_PENDING,
                 'sync_status' => Order::SYNC_NOT_SYNCED,
                 'source' => 'autonomous',

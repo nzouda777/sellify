@@ -72,6 +72,9 @@ class AutonomousScenarioResource extends Resource
                 ->numeric()
                 ->minValue(1)
                 ->required(),
+            Forms\Components\TextInput::make('promo_code')
+                ->label('Code promo')
+                ->dehydrated(false),
             Forms\Components\TextInput::make('generated_orders')
                 ->label('Commandes déjà générées')
                 ->disabled()

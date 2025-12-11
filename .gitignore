@@ -23,3 +23,5 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 /tmp/npm-cache
+/composer.json
+/composer-lock.json

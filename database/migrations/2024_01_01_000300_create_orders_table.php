@@ -20,6 +20,7 @@ return new class extends Migration
     $table->decimal('amount', 10, 2)->nullable();
     $table->string('currency')->default('USD');
     $table->integer('quantity')->default(1);
+    $table->string('promo_code')->nullable();
     $table->string('status')->default('pending');
     $table->string('sync_status')->default('not_synced');
     $table->string('source')->default('manual');

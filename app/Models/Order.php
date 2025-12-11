@@ -29,6 +29,7 @@ class Order extends Model
         'amount',
         'currency',
         'quantity',
+        'promo_code',
         'status',
         'sync_status',
         'source',
