@@ -50,13 +50,19 @@ class OrderSyncService
             }
 
             $discount = $this->calculateDiscountContext($order, $items);
+            $discountPercent = (float) ($discount['percent'] ?? 0);
 
             // Construire les line_items pour Shopify
             $lineItems = [];
             foreach ($items as $item) {
+                $baseUnitPrice = (float) $item['unit_price'];
+                $discountedUnitPrice = $discountPercent > 0
+                    ? max(0, $baseUnitPrice * (1 - ($discountPercent / 100)))
+                    : $baseUnitPrice;
+
                 $lineItem = [
                     'quantity' => (int) $item['quantity'],
-                    'price' => (string) number_format((float) $item['unit_price'], 2, '.', ''),
+                    'price' => (string) number_format($discountedUnitPrice, 2, '.', ''),
                 ];
 
                 // Ajouter variant_id si disponible
@@ -82,6 +88,7 @@ class OrderSyncService
             
             $payload = $order->payload ?? [];
             $shippingAddress = $payload['shipping_address'] ?? [];
+            $netOrderAmount = $this->calculateNetTotalFromItems($items, $discountPercent);
 
             // Construire le payload Shopify
             $shopifyPayload = [
@@ -123,7 +130,7 @@ class OrderSyncService
                     'status' => 'paid',
                     'transactions' => [
                         [
-                            'amount' => $order->amount,
+                            'amount' => (string) number_format($netOrderAmount, 2, '.', ''),
                             'currency' => $order->currency ?? 'EUR',
                             'kind' => 'sale',
                             'status' => 'success',
@@ -365,5 +372,22 @@ class OrderSyncService
         }
 
         return round($subtotal, 2);
+    }
+
+    /**
+     * Calcule le total net après remise à partir des items et du pourcentage
+     */
+    protected function calculateNetTotalFromItems(array $items, float $discountPercent): float
+    {
+        $factor = $discountPercent > 0 ? max(0, 1 - ($discountPercent / 100)) : 1;
+        $total = 0;
+
+        foreach ($items as $item) {
+            $qty = (float) ($item['quantity'] ?? 0);
+            $unitPrice = (float) ($item['unit_price'] ?? 0);
+            $total += $qty * $unitPrice * $factor;
+        }
+
+        return round($total, 2);
     }
 }
