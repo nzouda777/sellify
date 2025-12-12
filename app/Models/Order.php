@@ -30,6 +30,7 @@ class Order extends Model
         'currency',
         'quantity',
         'promo_code',
+        'promo_discount_percentage',
         'status',
         'sync_status',
         'source',
@@ -45,6 +46,7 @@ class Order extends Model
         'payload' => 'array',
         'amount' => 'decimal:2',
         'quantity' => 'integer',
+        'promo_discount_percentage' => 'decimal:2',
         'synced_at' => 'datetime',
     ];
 

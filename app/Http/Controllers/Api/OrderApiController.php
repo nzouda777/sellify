@@ -28,19 +28,27 @@ class OrderApiController extends Controller
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'exists:products,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
+            'promo_code' => ['nullable', 'string', 'max:255'],
+            'promo_discount_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
         ]);
 
         $order = DB::transaction(function () use ($data) {
             $totalAmount = 0;
+            $discountAmount = 0;
+            $discountPercent = isset($data['promo_discount_percentage'])
+                ? max(0, min(100, (float) $data['promo_discount_percentage']))
+                : 0;
 
             $order = Order::create([
                 'shop_id' => $data['shop_id'],
-                'name' => $data['name'],
-                'email' => $data['email'] ?? null,
+                'customer_name' => $data['name'],
+                'customer_email' => $data['email'] ?? null,
                 'currency' => $data['currency'] ?? 'USD',
                 'status' => Order::STATUS_PENDING,
                 'sync_status' => Order::SYNC_NOT_SYNCED,
                 'source' => 'api',
+                'promo_code' => $data['promo_code'] ?? null,
+                'promo_discount_percentage' => $discountPercent,
             ]);
 
             foreach ($data['items'] as $itemData) {
@@ -59,9 +67,21 @@ class OrderApiController extends Controller
                 ]);
             }
 
+            if (!empty($data['promo_code']) && $discountPercent > 0) {
+                $discountAmount = round($totalAmount * ($discountPercent / 100), 2);
+                $totalAmount = max($totalAmount - $discountAmount, 0);
+            }
+
             $order->update([
-                'amount' => $totalAmount,
+                'amount' => round($totalAmount, 2),
                 'quantity' => collect($data['items'])->sum('quantity'),
+                'payload' => [
+                    'discount' => [
+                        'code' => $data['promo_code'] ?? null,
+                        'percent' => $discountPercent,
+                        'amount' => $discountAmount,
+                    ],
+                ],
             ]);
 
             return $order;

@@ -23,6 +23,7 @@ class AutonomousScenario extends Model
         'min_quantity',
         'max_quantity',
         'promo_code',
+        'promo_discount_percentage',
         'min_amount',
         'max_amount',
         'target_orders',
@@ -36,6 +37,7 @@ class AutonomousScenario extends Model
         'next_run_at' => 'datetime',
         'min_amount' => 'decimal:2',
         'max_amount' => 'decimal:2',
+        'promo_discount_percentage' => 'decimal:2',
         'target_orders' => 'integer',
         'generated_orders' => 'integer',
     ];

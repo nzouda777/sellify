@@ -75,12 +75,22 @@ class AutonomousOrderGeneratorService
                 ? $this->randomFloatInRange($scenario->min_amount, $scenario->max_amount)
                 : $unitPrice * $quantity;
 
+            $discountAmount = 0;
+            $discountPercent = (float) ($scenario->promo_discount_percentage ?? 0);
+
+            if (!empty($scenario->promo_code) && $discountPercent > 0) {
+                $discountAmount = round($amount * ($discountPercent / 100), 2);
+                $amount = max($amount - $discountAmount, 0);
+            }
+
             Log::info('AutonomousScenario: picked product and computed amounts', [
                 'scenario_id' => $scenario->id,
                 'product_id' => $product->id,
                 'quantity' => $quantity,
                 'unit_price' => $unitPrice,
                 'amount' => $amount,
+                'discount_percent' => $discountPercent,
+                'discount_amount' => $discountAmount,
             ]);
 
             $order = Order::create([
@@ -92,6 +102,7 @@ class AutonomousOrderGeneratorService
                 'currency' => $scenario->shop->products()->first()?->payload['presentment_prices'][0]['price']['currency_code'] ?? 'EUR',
                 'quantity' => $quantity,
                 'promo_code' => $scenario->promo_code,
+                'promo_discount_percentage' => $scenario->promo_discount_percentage,
                 'status' => Order::STATUS_PENDING,
                 'sync_status' => Order::SYNC_NOT_SYNCED,
                 'source' => 'autonomous',
@@ -101,6 +112,11 @@ class AutonomousOrderGeneratorService
                         'city' => $faker->city(),
                         'zip' => $faker->postcode(),
                         'country' => $faker->country(),
+                    ],
+                    'discount' => [
+                        'code' => $scenario->promo_code,
+                        'percent' => $discountPercent,
+                        'amount' => $discountAmount,
                     ],
                 ],
             ]);
