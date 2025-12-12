@@ -103,6 +103,21 @@ class Order extends Model
                 'changes' => $order->getDirty()
             ]);
         });
+
+        static::saving(function (Order $order) {
+            // Backfill des infos promo si elles sont présentes dans le payload
+            $payloadDiscount = $order->payload['discount'] ?? [];
+            $percentInPayload = $payloadDiscount['percent'] ?? null;
+            $codeInPayload = $payloadDiscount['code'] ?? null;
+
+            if ($order->promo_discount_percentage === null && $percentInPayload !== null) {
+                $order->promo_discount_percentage = $percentInPayload;
+            }
+
+            if (empty($order->promo_code) && !empty($codeInPayload)) {
+                $order->promo_code = $codeInPayload;
+            }
+        });
     }
 
     /**
