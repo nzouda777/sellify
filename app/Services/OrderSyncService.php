@@ -56,14 +56,35 @@ class OrderSyncService
             $lineItems = [];
             foreach ($items as $item) {
                 $baseUnitPrice = (float) $item['unit_price'];
-                $discountedUnitPrice = $discountPercent > 0
-                    ? max(0, $baseUnitPrice * (1 - ($discountPercent / 100)))
-                    : $baseUnitPrice;
 
                 $lineItem = [
                     'quantity' => (int) $item['quantity'],
-                    'price' => (string) number_format($discountedUnitPrice, 2, '.', ''),
+                    'price' => (string) number_format($baseUnitPrice, 2, '.', ''),
                 ];
+
+                // Ajouter la remise sur la ligne pour que Shopify l'affiche
+                if ($discountPercent > 0) {
+                    $lineSubtotal = $baseUnitPrice * (int) $item['quantity'];
+                    $lineDiscountAmount = round($lineSubtotal * ($discountPercent / 100), 2);
+
+                    $lineItem['applied_discount'] = [
+                        'description' => !empty($discount['code']) ? "Code {$discount['code']}" : 'Promotion',
+                        'title' => !empty($discount['code']) ? $discount['code'] : 'Promotion',
+                        'value' => (string) number_format($discountPercent, 2, '.', ''),
+                        'value_type' => 'percentage',
+                        'amount' => (string) number_format($lineDiscountAmount, 2, '.', ''),
+                        'amount_set' => [
+                            'shop_money' => [
+                                'amount' => (string) number_format($lineDiscountAmount, 2, '.', ''),
+                                'currency_code' => $order->currency ?? 'EUR',
+                            ],
+                            'presentment_money' => [
+                                'amount' => (string) number_format($lineDiscountAmount, 2, '.', ''),
+                                'currency_code' => $order->currency ?? 'EUR',
+                            ],
+                        ],
+                    ];
+                }
 
                 // Ajouter variant_id si disponible
                 if (!empty($item['shopify_variant_id'])) {
@@ -328,6 +349,17 @@ class OrderSyncService
         if ($amount === null) {
             $subtotal = $this->calculateSubtotalFromItems($items);
             $amount = round($subtotal * ($percent / 100), 2);
+        }
+
+        // Sauvegarder le pourcentage/code si la colonne est vide (backfill)
+        if (
+            ($order->promo_discount_percentage === null && $percent > 0) ||
+            (empty($order->promo_code) && !empty($code))
+        ) {
+            $order->forceFill([
+                'promo_discount_percentage' => $percent,
+                'promo_code' => $order->promo_code ?? $code,
+            ])->save();
         }
 
         return [
