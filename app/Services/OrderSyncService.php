@@ -141,7 +141,7 @@ class OrderSyncService
                     // marque la commande comme paye
                     'financial_status' => 'paid',
                     'discount_codes' => $this->formatDiscountCodes($discount),
-                    'fulfillment_status' => $order->fulfill == true ? 'fulfilled' : 'unfulfilled',
+                    'fulfillment_status' => $order->fulfill_orders ? 'fulfilled' : 'unfulfilled',
 
                     // 'source_name' => "web",          // 👈 très important
                     'browser_ip' => "127.0.0.1",       // tu peux mettre l'IP du client si tu l'as
