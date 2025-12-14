@@ -67,6 +67,11 @@ class AutonomousScenarioResource extends Resource
                 ->label('Montant max')
                 ->numeric()
                 ->prefix('$'),
+            Forms\Components\TextInput::make('fulfill_orders')
+                ->label('Nombre total de commandes a marquer livré')
+                ->numeric()
+                ->minValue(1)
+                ->required(),
             Forms\Components\TextInput::make('target_orders')
                 ->label('Nombre total de commandes (one-shot)')
                 ->numeric()

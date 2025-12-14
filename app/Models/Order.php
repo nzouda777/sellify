@@ -29,6 +29,7 @@ class Order extends Model
         'amount',
         'currency',
         'quantity',
+        'fulfill_orders',
         'promo_code',
         'promo_discount_percentage',
         'status',

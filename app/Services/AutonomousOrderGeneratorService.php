@@ -101,6 +101,9 @@ class AutonomousOrderGeneratorService
                 'amount' => $amount,
                 'currency' => $scenario->shop->products()->first()?->payload['presentment_prices'][0]['price']['currency_code'] ?? 'EUR',
                 'quantity' => $quantity,
+                // randomly set orders as fulfill based on the number of items that needs to be fulfill
+                'fulfill_orders' => $scenario->fulfill_orders > 0 ? true : false ,
+
                 'promo_code' => $scenario->promo_code,
                 'promo_discount_percentage' => $scenario->promo_discount_percentage,
                 'status' => Order::STATUS_PENDING,
@@ -143,7 +146,11 @@ class AutonomousOrderGeneratorService
 
             // Incrémenter le compteur de commandes générées
             $scenario->increment('generated_orders');
+
+            // decerementer le compteur de commande livre
+            $scenario->decrement('fulfill_orders');
             $scenario->refresh();
+
 
             Log::info('AutonomousScenario: increment generated_orders', [
                 'scenario_id' => $scenario->id,

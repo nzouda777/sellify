@@ -22,6 +22,7 @@ class AutonomousScenario extends Model
         'max_interval_seconds',
         'min_quantity',
         'max_quantity',
+        'fulfill_orders',
         'promo_code',
         'promo_discount_percentage',
         'min_amount',
