@@ -46,20 +46,6 @@ FROM base AS vendor
 COPY composer.json composer.lock* ./
 RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress --no-scripts
 
-# ---- Frontend assets (Vite) ----
-FROM node:20-bullseye-slim AS assets
-WORKDIR /app
-COPY package*.json vite.config.js ./
-COPY resources ./resources
-RUN npm install \
-    && npm run build
-
-# ---- Final runtime image ----
-FROM base AS app
-WORKDIR /var/www/html
-
-# Copy application code
-COPY --chown=${user}:${user} . .
 
 # Add vendors and built assets from dedicated stages
 COPY --chown=${user}:${user} --from=vendor /var/www/html/vendor /var/www/html/vendor
@@ -68,12 +54,12 @@ COPY --chown=${user}:${user} --from=assets /app/public/build /var/www/html/publi
 # Permissions for storage/cache
 RUN chown -R ${user}:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+# RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 
 USER ${user}
 
-COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-
-CMD ["/usr/local/bin/docker-entrypoint.sh"]
 EXPOSE 10000
 
+CMD ["/usr/local/bin/docker-entrypoint.sh"]
