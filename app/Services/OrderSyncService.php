@@ -49,13 +49,42 @@ class OrderSyncService
                 throw new \Exception('No items found for this order. Cannot sync to Shopify.');
             }
 
+            $discount = $this->calculateDiscountContext($order, $items);
+            $discountPercent = (float) ($discount['percent'] ?? 0);
+
             // Construire les line_items pour Shopify
             $lineItems = [];
             foreach ($items as $item) {
+                $baseUnitPrice = (float) $item['unit_price'];
+
                 $lineItem = [
                     'quantity' => (int) $item['quantity'],
-                    'price' => (string) number_format((float) $item['unit_price'], 2, '.', ''),
+                    'price' => (string) number_format($baseUnitPrice, 2, '.', ''),
                 ];
+
+                // Ajouter la remise sur la ligne pour que Shopify l'affiche
+                if ($discountPercent > 0) {
+                    $lineSubtotal = $baseUnitPrice * (int) $item['quantity'];
+                    $lineDiscountAmount = round($lineSubtotal * ($discountPercent / 100), 2);
+
+                    $lineItem['applied_discount'] = [
+                        'description' => !empty($discount['code']) ? "Code {$discount['code']}" : 'Promotion',
+                        'title' => !empty($discount['code']) ? $discount['code'] : 'Promotion',
+                        'value' => (string) number_format($discountPercent, 2, '.', ''),
+                        'value_type' => 'percentage',
+                        'amount' => (string) number_format($lineDiscountAmount, 2, '.', ''),
+                        'amount_set' => [
+                            'shop_money' => [
+                                'amount' => (string) number_format($lineDiscountAmount, 2, '.', ''),
+                                'currency_code' => $order->currency ?? 'EUR',
+                            ],
+                            'presentment_money' => [
+                                'amount' => (string) number_format($lineDiscountAmount, 2, '.', ''),
+                                'currency_code' => $order->currency ?? 'EUR',
+                            ],
+                        ],
+                    ];
+                }
 
                 // Ajouter variant_id si disponible
                 if (!empty($item['shopify_variant_id'])) {
@@ -66,7 +95,7 @@ class OrderSyncService
                     $lineItem['title'] = $product?->title ?? $product?->name ?? 'Product';
                     $lineItem['sku'] = $product?->sku ?? '';
                 }
-
+                
                 $lineItems[] = $lineItem;
             }
 
@@ -80,6 +109,7 @@ class OrderSyncService
             
             $payload = $order->payload ?? [];
             $shippingAddress = $payload['shipping_address'] ?? [];
+            $netOrderAmount = $this->calculateNetTotalFromItems($items, $discountPercent);
 
             // Construire le payload Shopify
             $shopifyPayload = [
@@ -110,7 +140,8 @@ class OrderSyncService
                     // 'note' => 'Order created from Filament admin panel',
                     // marque la commande comme paye
                     'financial_status' => 'paid',
-                    // 'fulfillment_status' => 'fulfilled',
+                    'discount_codes' => $this->formatDiscountCodes($discount),
+                    'fulfillment_status' => $order->fulfill_orders ? 'fulfilled' : 'unfulfilled',
 
                     // 'source_name' => "web",          // 👈 très important
                     'browser_ip' => "127.0.0.1",       // tu peux mettre l'IP du client si tu l'as
@@ -120,7 +151,7 @@ class OrderSyncService
                     'status' => 'paid',
                     'transactions' => [
                         [
-                            'amount' => $order->amount,
+                            'amount' => (string) number_format($netOrderAmount, 2, '.', ''),
                             'currency' => $order->currency ?? 'EUR',
                             'kind' => 'sale',
                             'status' => 'success',
@@ -291,5 +322,104 @@ class OrderSyncService
             'cancelled' => 'voided',
             default => 'pending',
         };
+    }
+
+    /**
+     * Calcule le contexte de remise à partir de la commande et des articles
+     */
+    protected function calculateDiscountContext(Order $order, array $items): array
+    {
+        $payloadDiscount = $order->payload['discount'] ?? [];
+        $percent = $payloadDiscount['percent'] ?? $order->promo_discount_percentage ?? 0;
+        $percent = max(0, min(100, (float) $percent));
+        $code = $payloadDiscount['code'] ?? $order->promo_code ?? null;
+
+        if (empty($code) || $percent <= 0) {
+            return [
+                'code' => $code,
+                'percent' => 0.0,
+                'amount' => 0.0,
+            ];
+        }
+
+        $amount = isset($payloadDiscount['amount'])
+            ? max(0, (float) $payloadDiscount['amount'])
+            : null;
+
+        if ($amount === null) {
+            $subtotal = $this->calculateSubtotalFromItems($items);
+            $amount = round($subtotal * ($percent / 100), 2);
+        }
+
+        // Sauvegarder le pourcentage/code si la colonne est vide (backfill)
+        if (
+            ($order->promo_discount_percentage === null && $percent > 0) ||
+            (empty($order->promo_code) && !empty($code))
+        ) {
+            $order->forceFill([
+                'promo_discount_percentage' => $percent,
+                'promo_code' => $order->promo_code ?? $code,
+            ])->save();
+        }
+
+        return [
+            'code' => $code,
+            'percent' => $percent,
+            'amount' => $amount,
+        ];
+    }
+
+    /**
+     * Construit le tableau attendu par Shopify pour les discount_codes
+     */
+    protected function formatDiscountCodes(array $discount): array
+    {
+        if (empty($discount['code'])) {
+            return [];
+        }
+
+        $discountCode = [
+            'code' => $discount['code'],
+        ];
+
+        if (($discount['percent'] ?? 0) > 0) {
+            $discountCode['amount'] = number_format((float) $discount['percent'], 2, '.', '');
+            $discountCode['type'] = 'percentage';
+        }
+
+        return [$discountCode];
+    }
+
+    /**
+     * Calcule le sous-total à partir des items (unit_price x quantity)
+     */
+    protected function calculateSubtotalFromItems(array $items): float
+    {
+        $subtotal = 0;
+
+        foreach ($items as $item) {
+            $qty = (float) ($item['quantity'] ?? 0);
+            $unitPrice = (float) ($item['unit_price'] ?? 0);
+            $subtotal += $qty * $unitPrice;
+        }
+
+        return round($subtotal, 2);
+    }
+
+    /**
+     * Calcule le total net après remise à partir des items et du pourcentage
+     */
+    protected function calculateNetTotalFromItems(array $items, float $discountPercent): float
+    {
+        $factor = $discountPercent > 0 ? max(0, 1 - ($discountPercent / 100)) : 1;
+        $total = 0;
+
+        foreach ($items as $item) {
+            $qty = (float) ($item['quantity'] ?? 0);
+            $unitPrice = (float) ($item['unit_price'] ?? 0);
+            $total += $qty * $unitPrice * $factor;
+        }
+
+        return round($total, 2);
     }
 }

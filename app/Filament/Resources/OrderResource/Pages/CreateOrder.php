@@ -37,6 +37,10 @@ class CreateOrder extends CreateRecord
 
             $totalAmount = 0;
             $totalQuantity = 0;
+            $discountAmount = 0;
+            $discountPercent = isset($data['promo_discount_percentage'])
+                ? max(0, min(100, (float) $data['promo_discount_percentage']))
+                : 0;
 
             // Vérification de la présence des items
             if (!isset($data['items']) || !is_array($data['items']) || empty($data['items'])) {
@@ -86,14 +90,22 @@ class CreateOrder extends CreateRecord
             }
 
             // Calculs totaux
-            $data['amount'] = $totalAmount;
+            if (!empty($data['promo_code']) && $discountPercent > 0) {
+                $discountAmount = round($totalAmount * ($discountPercent / 100), 2);
+                $totalAmount = max($totalAmount - $discountAmount, 0);
+            }
+
+            $data['amount'] = round($totalAmount, 2);
             $data['quantity'] = $totalQuantity;
             $data['status'] = $data['status'] ?? 'pending';
             $data['sync_status'] = 'not_synced';
+            $data['promo_discount_percentage'] = $discountPercent;
 
             Log::info('Totaux calculés:', [
                 'amount' => $totalAmount,
-                'quantity' => $totalQuantity
+                'quantity' => $totalQuantity,
+                'discount_percent' => $discountPercent,
+                'discount_amount' => $discountAmount,
             ]);
 
             // Vérification du shop_id
@@ -124,6 +136,11 @@ class CreateOrder extends CreateRecord
                     'name' => $data['customer_name'] ?? '',
                     'email' => $data['customer_email'] ?? '',
                     'phone' => $data['customer_phone'] ?? '',
+                ],
+                'discount' => [
+                    'code' => $data['promo_code'] ?? null,
+                    'percent' => $discountPercent,
+                    'amount' => $discountAmount,
                 ],
                 'created_from' => 'filament_admin',
                 'created_at' => now()->toIso8601String(),
@@ -362,9 +379,25 @@ class CreateOrder extends CreateRecord
                                     ->default('France')
                                     ->required()
                                     ->maxLength(255),
-                            ])
+                        ])
                             ->columnSpan(1),
                     ]),
+                
+                Fieldset::make('Promotion')
+                    ->schema([
+                        TextInput::make('promo_code')
+                            ->label('Code promo')
+                            ->maxLength(255),
+                        TextInput::make('promo_discount_percentage')
+                            ->label('Réduction (%)')
+                            ->numeric()
+                            ->minValue(0)
+                            ->maxValue(100)
+                            ->step(0.01)
+                            ->suffix('%')
+                            ->helperText('Appliquée au total des articles si un code promo est renseigné.'),
+                    ])
+                    ->columns(2),
                 
                 Fieldset::make('Articles de la commande')
                     ->schema([

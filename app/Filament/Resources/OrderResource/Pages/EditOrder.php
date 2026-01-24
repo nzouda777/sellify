@@ -85,6 +85,11 @@ class EditOrder extends EditRecord
             Log::info('Données reçues pour modification:', array_keys($data));
 
             // Recalculer les totaux si les items ont changé
+            $discountAmount = 0;
+            $discountPercent = isset($data['promo_discount_percentage'])
+                ? max(0, min(100, (float) $data['promo_discount_percentage']))
+                : 0;
+
             if (isset($data['items']) && is_array($data['items'])) {
                 $totalAmount = 0;
                 $totalQuantity = 0;
@@ -96,21 +101,39 @@ class EditOrder extends EditRecord
                     $totalQuantity += intval($item['quantity'] ?? 0);
                 }
 
-                $data['amount'] = $totalAmount;
-                $data['quantity'] = $totalQuantity;
+                if (!empty($data['promo_code']) && $discountPercent > 0) {
+                    $discountAmount = round($totalAmount * ($discountPercent / 100), 2);
+                    $totalAmount = max($totalAmount - $discountAmount, 0);
+                }
 
+                $data['amount'] = round($totalAmount, 2);
+                $data['quantity'] = $totalQuantity;
                 Log::info('Totaux recalculés:', [
                     'amount' => $totalAmount,
-                    'quantity' => $totalQuantity
+                    'quantity' => $totalQuantity,
+                    'discount_percent' => $discountPercent,
+                    'discount_amount' => $discountAmount,
                 ]);
             }
 
+            $data['promo_discount_percentage'] = $discountPercent;
+
             // Mise à jour du payload si l'adresse a changé
+            $currentPayload = $this->record->payload ?? [];
+
             if (isset($data['shipping_address'])) {
-                $currentPayload = $this->record->payload ?? [];
                 $currentPayload['shipping_address'] = $data['shipping_address'];
-                $data['payload'] = $currentPayload;
                 unset($data['shipping_address']);
+            }
+
+            $currentPayload['discount'] = [
+                'code' => $data['promo_code'] ?? $this->record->promo_code,
+                'percent' => $discountPercent,
+                'amount' => $discountAmount,
+            ];
+
+            if (!empty($currentPayload)) {
+                $data['payload'] = $currentPayload;
             }
 
             Log::info('=== FIN mutateFormDataBeforeSave (Edit) ===');

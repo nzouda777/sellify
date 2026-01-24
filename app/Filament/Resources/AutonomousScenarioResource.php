@@ -67,11 +67,26 @@ class AutonomousScenarioResource extends Resource
                 ->label('Montant max')
                 ->numeric()
                 ->prefix('$'),
+            Forms\Components\TextInput::make('fulfill_orders')
+                ->label('Nombre total de commandes a marquer livré')
+                ->numeric()
+                ->minValue(1)
+                ->required(),
             Forms\Components\TextInput::make('target_orders')
                 ->label('Nombre total de commandes (one-shot)')
                 ->numeric()
                 ->minValue(1)
                 ->required(),
+            Forms\Components\TextInput::make('promo_code')
+                ->label('Code promo'),
+            Forms\Components\TextInput::make('promo_discount_percentage')
+                ->label('Réduction (%)')
+                ->numeric()
+                ->minValue(0)
+                ->maxValue(100)
+                ->step(0.01)
+                ->suffix('%')
+                ->helperText('Pourcentage appliqué si un code promo est renseigné.'),
             Forms\Components\TextInput::make('generated_orders')
                 ->label('Commandes déjà générées')
                 ->disabled()
@@ -99,6 +114,13 @@ class AutonomousScenarioResource extends Resource
                     ->label('Localisation'),
                 Tables\Columns\TextColumn::make('faker_locale')
                     ->label('Locale Faker'),
+                Tables\Columns\TextColumn::make('promo_code')
+                    ->label('Code promo')
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('promo_discount_percentage')
+                    ->label('Réduction')
+                    ->formatStateUsing(fn ($state) => $state ? rtrim(rtrim(number_format((float) $state, 2), '0'), '.') . '%' : '—')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('progress')
                     ->label('Progression')
                     ->getStateUsing(function (AutonomousScenario $record): string {

@@ -111,6 +111,23 @@ class OrderResource extends Resource
                 ])
                 ->collapsible(),
 
+            Forms\Components\Section::make('Promotion')
+                ->schema([
+                    Forms\Components\TextInput::make('promo_code')
+                        ->label('Code promo')
+                        ->maxLength(255),
+                    Forms\Components\TextInput::make('promo_discount_percentage')
+                        ->label('Réduction (%)')
+                        ->numeric()
+                        ->minValue(0)
+                        ->maxValue(100)
+                        ->step(0.01)
+                        ->suffix('%')
+                        ->helperText('Appliquée au total des articles quand un code promo est fourni.'),
+                ])
+                ->columns(2)
+                ->collapsible(),
+
             Forms\Components\Section::make('Articles de la commande')
                 ->schema([
                     Forms\Components\Repeater::make('items')
@@ -305,6 +322,17 @@ class OrderResource extends Resource
                     ->label('Montant')
                     ->money('eur')
                     ->sortable(),
+                    
+                Tables\Columns\TextColumn::make('promo_code')
+                    ->label('Code promo')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                    
+                Tables\Columns\TextColumn::make('promo_discount_percentage')
+                    ->label('Réduction')
+                    ->formatStateUsing(fn ($state) => $state ? rtrim(rtrim(number_format((float) $state, 2), '0'), '.') . '%' : '—')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                     
                 Tables\Columns\TextColumn::make('quantity')
                     ->label('Articles')

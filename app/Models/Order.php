@@ -29,6 +29,9 @@ class Order extends Model
         'amount',
         'currency',
         'quantity',
+        'fulfill_orders',
+        'promo_code',
+        'promo_discount_percentage',
         'status',
         'sync_status',
         'source',
@@ -44,6 +47,7 @@ class Order extends Model
         'payload' => 'array',
         'amount' => 'decimal:2',
         'quantity' => 'integer',
+        'promo_discount_percentage' => 'decimal:2',
         'synced_at' => 'datetime',
     ];
 
@@ -99,6 +103,21 @@ class Order extends Model
                 'id' => $order->id,
                 'changes' => $order->getDirty()
             ]);
+        });
+
+        static::saving(function (Order $order) {
+            // Backfill des infos promo si elles sont présentes dans le payload
+            $payloadDiscount = $order->payload['discount'] ?? [];
+            $percentInPayload = $payloadDiscount['percent'] ?? null;
+            $codeInPayload = $payloadDiscount['code'] ?? null;
+
+            if ($order->promo_discount_percentage === null && $percentInPayload !== null) {
+                $order->promo_discount_percentage = $percentInPayload;
+            }
+
+            if (empty($order->promo_code) && !empty($codeInPayload)) {
+                $order->promo_code = $codeInPayload;
+            }
         });
     }
 
