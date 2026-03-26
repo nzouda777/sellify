@@ -16,6 +16,7 @@ class AutonomousScenario extends Model
         'name',
         'location_label',
         'faker_locale',
+        'currency_code',
         'window_start_time',
         'window_end_time',
         'min_interval_seconds',

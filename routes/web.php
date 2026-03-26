@@ -4,7 +4,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Shopify\OAuthController;
 use App\Http\Controllers\Shopify\OrderController;
 
-Route::view('/', 'welcome');
+// Gérer l'installation Shopify sur la route racine
+Route::get('/', [OAuthController::class, 'install'])->name('shopify.install');
 
 Route::get('/shopify/connect', [OAuthController::class, 'redirectToShopify'])->name('shopify.connect');
 Route::get('/shopify/callback', [OAuthController::class, 'handleCallback'])->name('shopify.callback');
