@@ -76,11 +76,11 @@ class OrderSyncService
                         'amount_set' => [
                             'shop_money' => [
                                 'amount' => (string) number_format($lineDiscountAmount, 2, '.', ''),
-                                'currency_code' => $order->currency,
+                                'currency_code' => $order->currency ?? 'EUR',
                             ],
                             'presentment_money' => [
                                 'amount' => (string) number_format($lineDiscountAmount, 2, '.', ''),
-                                'currency_code' => $order->currency,
+                                'currency_code' => $order->currency ?? 'EUR',
                             ],
                         ],
                     ];

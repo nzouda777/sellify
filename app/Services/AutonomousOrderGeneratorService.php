@@ -88,7 +88,6 @@ class AutonomousOrderGeneratorService
                 'amount' => $amount,
                 'discount_percent' => $discountPercent,
                 'discount_amount' => $discountAmount,
-                'currency' => $scenario->currency_code,
             ]);
 
             $order = Order::create([

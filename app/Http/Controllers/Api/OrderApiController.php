@@ -43,7 +43,7 @@ class OrderApiController extends Controller
                 'shop_id' => $data['shop_id'],
                 'customer_name' => $data['name'],
                 'customer_email' => $data['email'] ?? null,
-                'currency_code' => $data['currency_code'] ?? 'USD',
+                'currency' => $data['currency'] ?? 'USD',
                 'status' => Order::STATUS_PENDING,
                 'sync_status' => Order::SYNC_NOT_SYNCED,
                 'source' => 'api',

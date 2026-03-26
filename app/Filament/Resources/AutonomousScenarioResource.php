@@ -81,12 +81,7 @@ class AutonomousScenarioResource extends Resource
             Forms\Components\TextInput::make('max_amount')
                 ->label('Montant max')
                 ->numeric()
-                ->prefix(fn (Forms\Get $get) => match ($get('currency_code')) {
-                    'EUR' => '€',
-                    'GBP' => '£',
-                    'JPY' => '¥',
-                    default => '$',
-                }),
+                ->prefix('$'),
             Forms\Components\TextInput::make('fulfill_orders')
                 ->label('Nombre total de commandes a marquer livré')
                 ->numeric()
@@ -134,8 +129,6 @@ class AutonomousScenarioResource extends Resource
                     ->label('Localisation'),
                 Tables\Columns\TextColumn::make('faker_locale')
                     ->label('Locale Faker'),
-                Tables\Columns\TextColumn::make('currency_code')
-                    ->label('Devise'),
                 Tables\Columns\TextColumn::make('promo_code')
                     ->label('Code promo')
                     ->toggleable(isToggledHiddenByDefault: true),

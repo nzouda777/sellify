@@ -398,21 +398,6 @@ class CreateOrder extends CreateRecord
                             ->helperText('Appliquée au total des articles si un code promo est renseigné.'),
                     ])
                     ->columns(2),
-
-                Fieldset::make('Paramètres')
-                    ->schema([
-                        Select::make('currency')
-                            ->label('Devise')
-                            ->options([
-                                'EUR' => 'EUR (€)',
-                                'USD' => 'USD ($)',
-                                'GBP' => 'GBP (£)',
-                                'CAD' => 'CAD ($)',
-                            ])
-                            ->default('EUR')
-                            ->required(),
-                    ])
-                    ->columnSpanFull(),
                 
                 Fieldset::make('Articles de la commande')
                     ->schema([
