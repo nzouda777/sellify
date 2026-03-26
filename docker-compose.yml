@@ -1,7 +1,7 @@
 version: "3.9"
 
 x-laravel-common: &laravel-common
-  image: sellify-app
+  image: sellify-base-app
   restart: unless-stopped
   working_dir: /var/www/html
   env_file:
@@ -10,7 +10,7 @@ x-laravel-common: &laravel-common
     - .:/var/www/html
     - vendor:/var/www/html/vendor
   networks:
-    - sellify-network
+    - sellify-base-network
 
 services:
   app:
@@ -18,7 +18,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: sellify-app
+    container_name: sellify-base-app
     depends_on:
       db:
         condition: service_healthy
@@ -27,7 +27,7 @@ services:
 
   web:
     image: nginx:1.27
-    container_name: sellify-web
+    container_name: sellify-base-web
     restart: unless-stopped
     ports:
       - "8080:80"
@@ -38,11 +38,11 @@ services:
       app:
         condition: service_started
     networks:
-      - sellify-network
+      - sellify-base-network
 
   vite:
     image: node:20-bullseye-slim
-    container_name: sellify-vite
+    container_name: sellify-base-vite
     working_dir: /var/www/html
     command: sh -c "npm install && npm run dev -- --host --port 5173"
     ports:
@@ -54,13 +54,13 @@ services:
       app:
         condition: service_started
     networks:
-      - sellify-network
+      - sellify-base-network
     profiles:
       - dev
 
   worker:
     <<: *laravel-common
-    container_name: sellify-worker
+    container_name: sellify-base-worker
     command: php artisan queue:work --tries=3
     depends_on:
       db:
@@ -70,7 +70,7 @@ services:
 
   scheduler:
     <<: *laravel-common
-    container_name: sellify-scheduler
+    container_name: sellify-base-scheduler
     command: php artisan schedule:work
     depends_on:
       db:
@@ -80,7 +80,7 @@ services:
 
   db:
     image: mysql:8.0
-    container_name: sellify-db
+    container_name: sellify-base-db
     restart: unless-stopped
     command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     environment:
@@ -95,20 +95,20 @@ services:
       timeout: 5s
       retries: 10
     networks:
-      - sellify-network
+      - sellify-base-network
 
   redis:
     image: redis:7
-    container_name: sellify-redis
+    container_name: sellify-base-redis
     restart: unless-stopped
     ports:
       - "6379:6379"
     networks:
-      - sellify-network
+      - sellify-base-network
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin:5.2
-    container_name: sellify-phpmyadmin
+    container_name: sellify-base-phpmyadmin
     restart: unless-stopped
     ports:
       - "8081:80"
@@ -120,10 +120,10 @@ services:
       db:
         condition: service_healthy
     networks:
-      - sellify-network
+      - sellify-base-network
 
 networks:
-  sellify-network:
+  sellify-base-network:
     driver: bridge
 
 volumes:
