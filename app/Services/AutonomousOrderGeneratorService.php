@@ -97,7 +97,7 @@ class AutonomousOrderGeneratorService
                 'shop_id' => $scenario->shop_id,
                 'customer_name' => $faker->name(),
                 'customer_email' => $faker->safeEmail(),
-                'customer_phone' => str_replace(['-', ' ', '(', ')', '+', '.'], '', $faker->phoneNumber()),
+                'customer_phone' => $faker->regexify('\+33[67][0-9]{8}'),
                 'amount' => $amount,
                 'currency' => $scenario->shop->products()->first()?->payload['presentment_prices'][0]['price']['currency_code'] ?? 'EUR',
                 'quantity' => $quantity,
