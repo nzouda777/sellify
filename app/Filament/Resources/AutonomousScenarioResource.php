@@ -37,6 +37,16 @@ class AutonomousScenarioResource extends Resource
                     'de_DE' => 'German',
                 ])
                 ->default('en_US'),
+            Forms\Components\Select::make('currency_code')
+                ->label('Devise')
+                ->options([
+                    'EUR' => 'Euro',
+                    'USD' => 'Dollar',
+                    'GBP' => 'Pound',
+                    'JPY' => 'Yen',
+                ])
+                ->default('EUR')
+                ->live(),
             Forms\Components\TimePicker::make('window_start_time')
                 ->label('Début de la fenêtre')
                 ->seconds(false),
@@ -62,11 +72,21 @@ class AutonomousScenarioResource extends Resource
             Forms\Components\TextInput::make('min_amount')
                 ->label('Montant min')
                 ->numeric()
-                ->prefix('$'),
+                ->prefix(fn (Forms\Get $get) => match ($get('currency_code')) {
+                    'EUR' => '€',
+                    'GBP' => '£',
+                    'JPY' => '¥',
+                    default => '$',
+                }),
             Forms\Components\TextInput::make('max_amount')
                 ->label('Montant max')
                 ->numeric()
-                ->prefix('$'),
+                ->prefix(fn (Forms\Get $get) => match ($get('currency_code')) {
+                    'EUR' => '€',
+                    'GBP' => '£',
+                    'JPY' => '¥',
+                    default => '$',
+                }),
             Forms\Components\TextInput::make('fulfill_orders')
                 ->label('Nombre total de commandes a marquer livré')
                 ->numeric()
@@ -114,6 +134,8 @@ class AutonomousScenarioResource extends Resource
                     ->label('Localisation'),
                 Tables\Columns\TextColumn::make('faker_locale')
                     ->label('Locale Faker'),
+                Tables\Columns\TextColumn::make('currency_code')
+                    ->label('Devise'),
                 Tables\Columns\TextColumn::make('promo_code')
                     ->label('Code promo')
                     ->toggleable(isToggledHiddenByDefault: true),

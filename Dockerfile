@@ -46,20 +46,30 @@ FROM base AS vendor
 COPY composer.json composer.lock* ./
 RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress --no-scripts
 
+# ---- Final stage ----
+FROM base AS final
 
-# Add vendors and built assets from dedicated stages
+# Copy vendor from the vendor stage
 COPY --chown=${user}:${user} --from=vendor /var/www/html/vendor /var/www/html/vendor
-COPY --chown=${user}:${user} --from=assets /app/public/build /var/www/html/public/build
+
+# Copy the rest of the application
+COPY --chown=${user}:${user} . /var/www/html/
+
+# Note: You mentioned an 'assets' stage in your original file
+# If you need to copy from assets, make sure to define that stage first
+# For example:
+# FROM node:18 AS assets
+# WORKDIR /app
+# COPY package*.json ./
+# RUN npm ci && npm run build
+
+# COPY --chown=${user}:${user} --from=assets /app/public/build /var/www/html/public/build
 
 # Permissions for storage/cache
 RUN chown -R ${user}:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
-COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-# RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-
 
 USER ${user}
 
-EXPOSE 10000
-
-CMD ["/usr/local/bin/docker-entrypoint.sh"]
+EXPOSE 9000
+CMD ["php-fpm"]

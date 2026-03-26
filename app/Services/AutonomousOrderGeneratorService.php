@@ -41,13 +41,10 @@ class AutonomousOrderGeneratorService
 
         $scenario->update(['next_run_at' => $nextRun]);
 
-        // Planifie le prochain job GenerateAutonomousOrder avec un delay respectant la plage min/max
-        GenerateAutonomousOrder::dispatch($scenario->id)->delay($interval);
-
         Log::info('AutonomousScenario: end scheduleNextRun', [
             'scenario_id' => $scenario->id,
             'next_run_at' => $nextRun->toDateTimeString(),
-            'dispatched_with_delay_seconds' => $interval,
+            'interval_seconds' => $interval,
         ]);
     }
 
@@ -91,15 +88,18 @@ class AutonomousOrderGeneratorService
                 'amount' => $amount,
                 'discount_percent' => $discountPercent,
                 'discount_amount' => $discountAmount,
+                'currency' => $scenario->currency_code,
             ]);
 
             $order = Order::create([
                 'shop_id' => $scenario->shop_id,
                 'customer_name' => $faker->name(),
                 'customer_email' => $faker->safeEmail(),
-                'customer_phone' => str_replace(['-', ' ', '(', ')', '+', '.'], '', $faker->phoneNumber()),
+
+                'customer_phone' => $faker->regexify('\+33[67][0-9]{8}'),
+
                 'amount' => $amount,
-                'currency' => $scenario->shop->products()->first()?->payload['presentment_prices'][0]['price']['currency_code'] ?? 'EUR',
+                'currency' => $scenario->currency_code ?? "EUR",
                 'quantity' => $quantity,
                 // randomly set orders as fulfill based on the number of items that needs to be fulfill
                 'fulfill_orders' => $scenario->fulfill_orders > 0 ? true : false ,
