@@ -69,7 +69,57 @@ COPY --chown=${user}:${user} --from=assets /app/public/build /var/www/html/publi
 RUN chown -R ${user}:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-USER ${user}
+# Setup Nginx and Supervisor for Dokploy (PaaS deployment)
+USER root
+RUN apt-get update && apt-get install -y nginx supervisor \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-EXPOSE 9000
-CMD ["php-fpm"]
+# Configure Nginx for single-container deployment
+RUN echo 'server {\n\
+    listen 80;\n\
+    index index.php index.html;\n\
+    server_name _;\n\
+    root /var/www/html/public;\n\
+\n\
+    location / {\n\
+        try_files $uri $uri/ /index.php?$query_string;\n\
+    }\n\
+\n\
+    location ~ \\.php$ {\n\
+        include fastcgi_params;\n\
+        fastcgi_pass 127.0.0.1:9000;\n\
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;\n\
+        fastcgi_param PATH_INFO $fastcgi_path_info;\n\
+    }\n\
+}' > /etc/nginx/sites-available/default
+
+# Configure Supervisor to run both Nginx and PHP-FPM
+RUN echo '[supervisord]\n\
+nodaemon=true\n\
+user=root\n\
+logfile=/dev/null\n\
+logfile_maxbytes=0\n\
+\n\
+[program:php-fpm]\n\
+command=php-fpm\n\
+user=root\n\
+autostart=true\n\
+autorestart=true\n\
+stdout_logfile=/dev/stdout\n\
+stdout_logfile_maxbytes=0\n\
+stderr_logfile=/dev/stderr\n\
+stderr_logfile_maxbytes=0\n\
+\n\
+[program:nginx]\n\
+command=nginx -g "daemon off;"\n\
+user=root\n\
+autostart=true\n\
+autorestart=true\n\
+stdout_logfile=/dev/stdout\n\
+stdout_logfile_maxbytes=0\n\
+stderr_logfile=/dev/stderr\n\
+stderr_logfile_maxbytes=0' > /etc/supervisor/conf.d/supervisord.conf
+
+EXPOSE 80 9000
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
