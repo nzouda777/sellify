@@ -61,6 +61,11 @@ WORKDIR /var/www/html
 # Copy application code
 COPY --chown=${user}:${user} . .
 
+# Ensure Laravel storage directories exist (not tracked by Git)
+RUN mkdir -p storage/framework/{cache/data,sessions,views} \
+    storage/logs \
+    bootstrap/cache
+
 # Add vendors and built assets from dedicated stages
 COPY --chown=${user}:${user} --from=vendor /var/www/html/vendor /var/www/html/vendor
 COPY --chown=${user}:${user} --from=assets /app/public/build /var/www/html/public/build
