@@ -68,11 +68,21 @@ class OrderResource extends Resource
                                 ->maxLength(255)
                                 ->placeholder('+33 6 12 34 56 78'),
                             
-                            Forms\Components\TextInput::make('currency')
+                            Forms\Components\Select::make('currency')
                                 ->label('Devise')
+                                ->options([
+                                    'EUR' => 'EUR - Euro',
+                                    'USD' => 'USD - Dollar US',
+                                    'GBP' => 'GBP - Livre sterling',
+                                    'CHF' => 'CHF - Franc suisse',
+                                    'CAD' => 'CAD - Dollar canadien',
+                                    'AUD' => 'AUD - Dollar australien',
+                                    'JPY' => 'JPY - Yen japonais',
+                                ])
                                 ->default('EUR')
-                                ->maxLength(3)
-                                ->placeholder('EUR'),
+                                ->required()
+                                ->searchable()
+                                ->native(false),
                         ]),
                 ])
                 ->collapsible(),
@@ -237,7 +247,7 @@ class OrderResource extends Resource
                             Forms\Components\TextInput::make('unit_price')
                                 ->label('Prix unitaire')
                                 ->numeric()
-                                ->prefix('€')
+                                ->prefix(fn (Forms\Get $get) => $get('../../currency') ?? 'EUR')
                                 ->step(0.01)
                                 ->required()
                                 ->live()
@@ -251,7 +261,7 @@ class OrderResource extends Resource
                             Forms\Components\TextInput::make('total_price')
                                 ->label('Total')
                                 ->numeric()
-                                ->prefix('€')
+                                ->prefix(fn (Forms\Get $get) => $get('../../currency') ?? 'EUR')
                                 ->disabled()
                                 ->dehydrated(false)
                                 ->afterStateHydrated(function (Forms\Get $get, Forms\Set $set) {
@@ -320,7 +330,7 @@ class OrderResource extends Resource
                     
                 Tables\Columns\TextColumn::make('amount')
                     ->label('Montant')
-                    ->money('eur')
+                    ->money(fn ($record) => strtolower($record->currency ?? 'eur'))
                     ->sortable(),
                     
                 Tables\Columns\TextColumn::make('promo_code')

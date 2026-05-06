@@ -14,6 +14,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Facades\App;
@@ -351,6 +352,23 @@ class CreateOrder extends CreateRecord
                                     ->tel()
                                     ->maxLength(255)
                                     ->placeholder('+33 6 12 34 56 78'),
+                                
+                                Select::make('currency')
+                                    ->label('Devise')
+                                    ->options([
+                                        'EUR' => 'EUR - Euro',
+                                        'USD' => 'USD - Dollar US',
+                                        'GBP' => 'GBP - Livre sterling',
+                                        'CHF' => 'CHF - Franc suisse',
+                                        'CAD' => 'CAD - Dollar canadien',
+                                        'AUD' => 'AUD - Dollar australien',
+                                        'JPY' => 'JPY - Yen japonais',
+                                    ])
+                                    ->default('EUR')
+                                    ->required()
+                                    ->searchable()
+                                    ->native(false)
+                                    ->live(),
                             ])
                             ->columnSpan(1),
                             
@@ -440,9 +458,9 @@ class CreateOrder extends CreateRecord
                                     ->label('Prix unitaire')
                                     ->numeric()
                                     ->required()
-                                    ->prefix('€')
+                                    ->prefix(fn (Get $get) => $get('../../currency') ?? 'EUR')
                                     ->step(0.01)
-                                    ->disabled(fn($get) => (bool) $get('product_id')),
+                                    ->disabled(fn(Get $get) => (bool) $get('product_id')),
                                     
                                 Hidden::make('shopify_variant_id')
                                     ->dehydrated(),
