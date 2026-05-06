@@ -7,7 +7,6 @@ use App\Models\AutonomousScenario;
 use App\Models\Order;
 use App\Models\OrderItem;
 use Carbon\Carbon;
-use Faker\Factory as FakerFactory;
 use Illuminate\Support\Facades\Log;
 
 
@@ -61,11 +60,7 @@ class AutonomousOrderGeneratorService
         ]);
 
         try {
-            $fakerLocale = $scenario->faker_locale ?? $this->mapLocaleFromLocation($scenario->location_label);
-
-            // Crée un générateur Faker spécifique à la locale du scénario
-            /** @var \Faker\Generator $faker */
-            $faker = FakerFactory::create($fakerLocale);
+            $customer = $this->generateFakeCustomer();
 
             $product = $this->pickProduct($scenario);
             $quantity = random_int($scenario->min_quantity, $scenario->max_quantity);
@@ -95,9 +90,9 @@ class AutonomousOrderGeneratorService
 
             $order = Order::create([
                 'shop_id' => $scenario->shop_id,
-                'customer_name' => $faker->name(),
-                'customer_email' => $faker->safeEmail(),
-                'customer_phone' => $faker->regexify('\+33[67][0-9]{8}'),
+                'customer_name' => $customer['name'],
+                'customer_email' => $customer['email'],
+                'customer_phone' => $customer['phone'],
                 'amount' => $amount,
                 'currency' => $scenario->currency ?? 'EUR',
                 'quantity' => $quantity,
@@ -111,10 +106,10 @@ class AutonomousOrderGeneratorService
                 'source' => 'autonomous',
                 'payload' => [
                     'shipping_address' => [
-                        'address1' => $faker->streetAddress(),
-                        'city' => $faker->city(),
-                        'zip' => $faker->postcode(),
-                        'country' => $faker->country(),
+                        'address1' => $customer['address'],
+                        'city' => $customer['city'],
+                        'zip' => $customer['zip'],
+                        'country' => $customer['country'],
                     ],
                     'discount' => [
                         'code' => $scenario->promo_code,
@@ -213,6 +208,64 @@ class AutonomousOrderGeneratorService
     protected function randomFloatInRange(float $min, float $max): float
     {
         return $min + mt_rand() / mt_getrandmax() * ($max - $min);
+    }
+
+    protected function generateFakeCustomer(): array
+    {
+        $firstNames = ['Jean', 'Marie', 'Pierre', 'Sophie', 'Thomas', 'Laura', 'Nicolas', 'Emma', 'Alexandre', 'Chloé', 'Lucas', 'Camille', 'Antoine', 'Julie', 'Hugo', 'Léa', 'Maxime', 'Manon', 'Paul', 'Sarah'];
+        $lastNames  = ['Martin', 'Bernard', 'Dubois', 'Thomas', 'Robert', 'Richard', 'Petit', 'Durand', 'Leroy', 'Moreau', 'Simon', 'Laurent', 'Lefebvre', 'Michel', 'Garcia', 'Roux', 'Bonnet', 'André', 'François', 'Mercier'];
+        $cities     = ['Paris', 'Lyon', 'Marseille', 'Bordeaux', 'Lille', 'Toulouse', 'Nantes', 'Strasbourg', 'Nice', 'Rennes', 'Montpellier', 'Grenoble', 'Bruxelles', 'Genève', 'Lausanne'];
+        $countries  = ['France', 'Belgium', 'Switzerland', 'Canada', 'Germany', 'Spain', 'Italy', 'United Kingdom', 'Netherlands', 'Portugal'];
+        $domains    = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com', 'protonmail.com'];
+        $streets    = ['Rue de la Paix', 'Avenue des Champs-Élysées', 'Boulevard Haussmann', 'Rue du Commerce', 'Avenue Jean Jaurès', 'Rue de Rivoli', 'Boulevard Saint-Germain', 'Rue de la République', 'Avenue de la Gare', 'Rue Principale'];
+
+        $firstName = $firstNames[array_rand($firstNames)];
+        $lastName  = $lastNames[array_rand($lastNames)];
+        $name      = $firstName . ' ' . $lastName;
+
+        $email = strtolower($this->latinize($firstName) . '.' . $this->latinize($lastName) . mt_rand(1, 999)) . '@' . $domains[array_rand($domains)];
+
+        $phonePrefix = mt_rand(0, 1) === 0 ? '+336' : '+337';
+        $phone = $phonePrefix . str_pad((string) mt_rand(0, 99999999), 8, '0', STR_PAD_LEFT);
+
+        $streetNumber = mt_rand(1, 150);
+        $address = $streetNumber . ' ' . $streets[array_rand($streets)];
+
+        $zip = str_pad((string) mt_rand(1000, 99999), 5, '0', STR_PAD_LEFT);
+
+        return [
+            'name'    => $name,
+            'email'   => $email,
+            'phone'   => $phone,
+            'address' => $address,
+            'city'    => $cities[array_rand($cities)],
+            'zip'     => $zip,
+            'country' => $countries[array_rand($countries)],
+        ];
+    }
+
+    protected function latinize(string $text): string
+    {
+        $map = [
+            'é' => 'e', 'è' => 'e', 'ê' => 'e', 'ë' => 'e',
+            'à' => 'a', 'â' => 'a', 'ä' => 'a', 'á' => 'a', 'ã' => 'a', 'å' => 'a',
+            'ç' => 'c',
+            'î' => 'i', 'ï' => 'i', 'í' => 'i',
+            'ô' => 'o', 'ö' => 'o', 'ó' => 'o', 'õ' => 'o',
+            'ù' => 'u', 'û' => 'u', 'ü' => 'u', 'ú' => 'u',
+            'ÿ' => 'y', 'ý' => 'y',
+            'ñ' => 'n',
+            'É' => 'E', 'È' => 'E', 'Ê' => 'E', 'Ë' => 'E',
+            'À' => 'A', 'Â' => 'A', 'Ä' => 'A', 'Á' => 'A', 'Ã' => 'A', 'Å' => 'A',
+            'Ç' => 'C',
+            'Î' => 'I', 'Ï' => 'I', 'Í' => 'I',
+            'Ô' => 'O', 'Ö' => 'O', 'Ó' => 'O', 'Õ' => 'O',
+            'Ù' => 'U', 'Û' => 'U', 'Ü' => 'U', 'Ú' => 'U',
+            'Ÿ' => 'Y', 'Ý' => 'Y',
+            'Ñ' => 'N',
+        ];
+
+        return strtr($text, $map);
     }
 
     protected function mapLocaleFromLocation(?string $location): string
