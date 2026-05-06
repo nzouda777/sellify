@@ -99,7 +99,7 @@ class AutonomousOrderGeneratorService
                 'customer_email' => $faker->safeEmail(),
                 'customer_phone' => $faker->regexify('\+33[67][0-9]{8}'),
                 'amount' => $amount,
-                'currency' => $scenario->shop->products()->first()?->payload['presentment_prices'][0]['price']['currency_code'] ?? 'EUR',
+                'currency' => $scenario->currency ?? 'EUR',
                 'quantity' => $quantity,
                 // randomly set orders as fulfill based on the number of items that needs to be fulfill
                 'fulfill_orders' => $scenario->fulfill_orders > 0 ? true : false ,

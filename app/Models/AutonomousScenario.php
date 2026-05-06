@@ -27,6 +27,7 @@ class AutonomousScenario extends Model
         'promo_discount_percentage',
         'min_amount',
         'max_amount',
+        'currency',
         'target_orders',
         'generated_orders',
         'is_active',

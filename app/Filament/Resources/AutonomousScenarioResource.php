@@ -59,14 +59,29 @@ class AutonomousScenarioResource extends Resource
                 ->label('Quantité max par commande')
                 ->numeric()
                 ->default(1),
+            Forms\Components\Select::make('currency')
+                ->label('Devise')
+                ->options([
+                    'EUR' => 'EUR - Euro',
+                    'USD' => 'USD - Dollar US',
+                    'GBP' => 'GBP - Livre sterling',
+                    'CHF' => 'CHF - Franc suisse',
+                    'CAD' => 'CAD - Dollar canadien',
+                    'AUD' => 'AUD - Dollar australien',
+                    'JPY' => 'JPY - Yen japonais',
+                ])
+                ->default('EUR')
+                ->required()
+                ->searchable()
+                ->native(false),
             Forms\Components\TextInput::make('min_amount')
                 ->label('Montant min')
                 ->numeric()
-                ->prefix('$'),
+                ->prefix(fn (Forms\Get $get) => $get('currency') ?? 'EUR'),
             Forms\Components\TextInput::make('max_amount')
                 ->label('Montant max')
                 ->numeric()
-                ->prefix('$'),
+                ->prefix(fn (Forms\Get $get) => $get('currency') ?? 'EUR'),
             Forms\Components\TextInput::make('fulfill_orders')
                 ->label('Nombre total de commandes a marquer livré')
                 ->numeric()
