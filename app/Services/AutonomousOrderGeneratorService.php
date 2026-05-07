@@ -212,12 +212,12 @@ class AutonomousOrderGeneratorService
 
     protected function generateFakeCustomer(): array
     {
-        $firstNames = ['Jean', 'Marie', 'Pierre', 'Sophie', 'Thomas', 'Laura', 'Nicolas', 'Emma', 'Alexandre', 'Chloé', 'Lucas', 'Camille', 'Antoine', 'Julie', 'Hugo', 'Léa', 'Maxime', 'Manon', 'Paul', 'Sarah'];
-        $lastNames  = ['Martin', 'Bernard', 'Dubois', 'Thomas', 'Robert', 'Richard', 'Petit', 'Durand', 'Leroy', 'Moreau', 'Simon', 'Laurent', 'Lefebvre', 'Michel', 'Garcia', 'Roux', 'Bonnet', 'André', 'François', 'Mercier'];
-        $cities     = ['Paris', 'Lyon', 'Marseille', 'Bordeaux', 'Lille', 'Toulouse', 'Nantes', 'Strasbourg', 'Nice', 'Rennes', 'Montpellier', 'Grenoble', 'Bruxelles', 'Genève', 'Lausanne'];
-        $countries  = ['France', 'Belgium', 'Switzerland', 'Canada', 'Germany', 'Spain', 'Italy', 'United Kingdom', 'Netherlands', 'Portugal'];
+        $firstNames = ['John', 'Michael', 'Robert', 'Jessica', 'Thomas', 'Laura', 'Nicholas', 'Emily', 'Alexander', 'Chloe', 'Luke', 'Cassidy', 'Anthony', 'Julia', 'Hope', 'Leah', 'Maxwell', 'Makenna', 'Riley', 'Sarah'];
+        $lastNames  = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Styles', 'Martinez', 'Scofield', 'Lopez', 'McTavish', 'Wilson', 'Anderson', 'Gallagher', 'Taylor', 'Moore', 'Jackson', 'Martin'];
+        $cities     = ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Philadelphia', 'San Antonio', 'San Diego', 'Dallas', 'San Jose', 'Austin', 'Jacksonville', 'San Francisco', 'Columbus', 'Fort Worth'];
+        $countries  = ['United States', 'Canada', 'United Kingdom', 'Australia', 'Germany', 'France', 'Spain', 'Italy', 'Netherlands', 'Belgium'];
         $domains    = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com', 'protonmail.com'];
-        $streets    = ['Rue de la Paix', 'Avenue des Champs-Élysées', 'Boulevard Haussmann', 'Rue du Commerce', 'Avenue Jean Jaurès', 'Rue de Rivoli', 'Boulevard Saint-Germain', 'Rue de la République', 'Avenue de la Gare', 'Rue Principale'];
+        $streets    = ['Main Street', 'Elm Street', 'Oak Street', 'Pine Avenue', 'Maple Avenue', 'Willow Street', 'Park Avenue', '4th Avenue', 'Broadway', 'Church Street'];
 
         $firstName = $firstNames[array_rand($firstNames)];
         $lastName  = $lastNames[array_rand($lastNames)];
